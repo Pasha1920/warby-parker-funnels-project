@@ -1,0 +1,54 @@
+--EXPLORING DATSET
+ /**
+ SELECT * FROM survey
+ LIMIT 10;
+ **/
+ SELECT question, COUNT (DISTINCT user_id), COUNT(response) 
+ FROM survey
+ GROUP BY 1;
+--EXAMINING HOME TRY-ON TABLES
+ /**
+SELECT * FROM quiz;
+SELECT * FROM home_try_on;
+SELECT * FROM purchase;
+**/
+
+--COMBINING TABLES
+SELECT DISTINCT q.user_id, h.user_id IS NOT NULL AS "is_home_try_on", h.number_of_pairs, p.user_id IS NOT NULL AS "is_purchase" 
+FROM quiz AS "q" LEFT JOIN home_try_on AS "h" 
+ON q.user_id=h.user_id
+LEFT JOIN purchase AS "p"
+ON h.user_id=p.user_id
+LIMIT 10;
+
+--CREATING CONVERSION FUNNEL
+WITH funnels AS
+(
+SELECT DISTINCT q.user_id, h.user_id IS NOT NULL AS "is_home_try_on", h.number_of_pairs, p.user_id IS NOT NULL AS "is_purchase" 
+FROM quiz AS "q" LEFT JOIN home_try_on AS "h" 
+ON q.user_id=h.user_id
+LEFT JOIN purchase AS "p"
+ON h.user_id=p.user_id
+)
+SELECT COUNT(*) AS "total_users", SUM(is_home_try_on) AS "num_home_try_on", SUM(is_purchase) AS "num_purchase",
+1.0*SUM(is_home_try_on)/COUNT(user_id) AS "percent_try_on",
+1.0*SUM(is_purchase)/SUM(is_home_try_on) AS "percent_purchase"
+FROM funnels;
+
+--COMPARING CONVERSION RATES OF A (3 PAIRS) AND B (5 PAIRS)GROUPS
+
+WITH funnels AS
+(
+SELECT DISTINCT q.user_id, h.user_id IS NOT NULL AS "is_home_try_on", h.number_of_pairs, p.user_id IS NOT NULL AS "is_purchase" 
+FROM quiz AS "q" LEFT JOIN home_try_on AS "h" 
+ON q.user_id=h.user_id
+LEFT JOIN purchase AS "p"
+ON h.user_id=p.user_id
+)
+SELECT
+  number_of_pairs,
+  SUM(CASE WHEN is_home_try_on THEN 1 ELSE 0 END) AS "home_try_ons",
+  SUM(CASE WHEN is_purchase THEN 1 ELSE 0 END) AS "purchases"
+FROM funnels
+GROUP BY number_of_pairs;
+
